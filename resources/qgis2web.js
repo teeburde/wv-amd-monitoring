@@ -1215,7 +1215,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 radius: 10,
                 angle: 0
             }),
-            zIndex: 5000
+            zIndex: 4000
         });
     }
     
@@ -1473,6 +1473,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bottomRightContainerDiv.appendChild(attributionControl);
 
     }
+
 
 
 
