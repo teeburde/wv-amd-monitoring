@@ -1398,7 +1398,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     console.log('Compliance layer added to map');
-})();
 
 	// Final verification
 	setTimeout(function() {
@@ -1421,6 +1420,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Map extent:', map.getView().calculateExtent(map.getSize()));
     console.log('Layer extent:', complianceSource.getExtent());
 }, 3000);
+})();
 
 //move controls inside containers, in order
     //zoom
@@ -1458,6 +1458,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bottomRightContainerDiv.appendChild(attributionControl);
 
     }
+
 
 
 
