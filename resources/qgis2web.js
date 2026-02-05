@@ -1285,6 +1285,21 @@ document.addEventListener('DOMContentLoaded', function() {
                             complianceIcon = '⚪';
                             break;
                     }
+
+					// Format limit display - show range for pH, single value for others
+				    var limitDisplay = '';
+				    if (param.parameter.toLowerCase().includes('ph')) {
+				        // For pH, show as range if both min and max exist
+				        if (param.mo_min_limit !== null && param.mo_max_limit !== null) {
+				            limitDisplay = param.mo_min_limit + '-' + param.mo_max_limit;
+				        } else {
+				            limitDisplay = 'N/A';
+				        }
+				    } else {
+				        // For other parameters, show only max limit
+				        limitDisplay = param.mo_max_limit !== null ? param.mo_max_limit : 'N/A';
+				    }
+    
                     
                     paramsSummary += '<li>' + complianceIcon + ' <strong>' + param.parameter + '</strong>: ' + 
                                      (param.reported_value !== null ? param.reported_value : 'N/A') + ' ' + 
@@ -1358,3 +1373,4 @@ document.addEventListener('DOMContentLoaded', function() {
         bottomRightContainerDiv.appendChild(attributionControl);
 
     }
+
