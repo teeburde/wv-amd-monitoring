@@ -1111,6 +1111,216 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 });
 
+// Compliance Data Layer with Symbology
+(function() {
+    // Function to aggregate features by outfall location
+    function aggregateComplianceData(features) {
+        var outfallMap = {};
+        
+        features.forEach(function(feature) {
+            var props = feature.properties;
+            var key = props.permit_id + '_' + props.outfall;
+            
+            if (!outfallMap[key]) {
+                outfallMap[key] = {
+                    permit_id: props.permit_id,
+                    outfall: props.outfall,
+                    outfall_description: props.outfall_description,
+                    owner_name: props.owner_name,
+                    coordinates: feature.geometry.coordinates,
+                    parameters: [],
+                    hasNonCompliance: false,
+                    hasUnknown: false,
+                    allNoDischarge: true,
+                    allCompliant: true
+                };
+            }
+            
+            var outfall = outfallMap[key];
+            
+            // Add all parameters from this feature
+            if (props.parameters && Array.isArray(props.parameters)) {
+                props.parameters.forEach(function(param) {
+                    outfall.parameters.push(param);
+                    
+                    // Update compliance flags
+                    if (param.compliance === "Not in Compliance") {
+                        outfall.hasNonCompliance = true;
+                        outfall.allCompliant = false;
+                        outfall.allNoDischarge = false;
+                    } else if (param.compliance === "Unknown") {
+                        outfall.hasUnknown = true;
+                        outfall.allCompliant = false;
+                        outfall.allNoDischarge = false;
+                    } else if (param.compliance === "In Compliance") {
+                        outfall.allNoDischarge = false;
+                    } else if (param.compliance !== "No Discharge") {
+                        outfall.allNoDischarge = false;
+                    }
+                });
+            }
+        });
+        
+        return Object.values(outfallMap);
+    }
+    
+    // Function to determine overall compliance status
+    function getComplianceStatus(outfall) {
+        if (outfall.hasNonCompliance) {
+            return 'Not in Compliance';
+        } else if (outfall.allNoDischarge) {
+            return 'No Discharge';
+        } else if (outfall.hasUnknown) {
+            return 'Unknown';
+        } else if (outfall.allCompliant) {
+            return 'In Compliance';
+        }
+        return 'Unknown';
+    }
+    
+    // Style function for compliance features
+    function complianceStyleFunction(feature) {
+        var compliance = feature.get('compliance_status');
+        var color, strokeColor, radius;
+        
+        switch(compliance) {
+            case 'Not in Compliance':
+                color = 'rgba(255, 0, 0, 0.8)';  // Red
+                strokeColor = 'rgba(139, 0, 0, 1)';  // Dark red
+                radius = 8;
+                break;
+            case 'In Compliance':
+                color = 'rgba(0, 255, 0, 0.8)';  // Green
+                strokeColor = 'rgba(0, 100, 0, 1)';  // Dark green
+                radius = 7;
+                break;
+            case 'Unknown':
+                color = 'rgba(255, 165, 0, 0.8)';  // Orange
+                strokeColor = 'rgba(204, 85, 0, 1)';  // Dark orange
+                radius = 7;
+                break;
+            case 'No Discharge':
+                color = 'rgba(169, 169, 169, 0.8)';  // Gray
+                strokeColor = 'rgba(105, 105, 105, 1)';  // Dark gray
+                radius = 6;
+                break;
+            default:
+                color = 'rgba(128, 128, 128, 0.8)';
+                strokeColor = 'rgba(64, 64, 64, 1)';
+                radius = 6;
+        }
+        
+        return new ol.style.Style({
+            image: new ol.style.Circle({
+                radius: radius,
+                fill: new ol.style.Fill({
+                    color: color
+                }),
+                stroke: new ol.style.Stroke({
+                    color: strokeColor,
+                    width: 2
+                })
+            }),
+            zIndex: compliance === 'Not in Compliance' ? 1000 : 100
+        });
+    }
+    
+    // Create compliance layer
+    var complianceSource = new ol.source.Vector();
+    var complianceLayer = new ol.layer.Vector({
+        source: complianceSource,
+        style: complianceStyleFunction,
+        title: 'NPDES Compliance Status',
+        interactive: true,
+        popuplayertitle: 'NPDES Compliance Status',
+        fieldLabels: {
+            'permit_id': 'inline label - always visible',
+            'outfall': 'inline label - always visible',
+            'owner_name': 'inline label - always visible',
+            'compliance_status': 'inline label - always visible',
+            'parameters_summary': 'inline label - always visible'
+        },
+        fieldAliases: {
+            'permit_id': 'Permit ID',
+            'outfall': 'Outfall',
+            'owner_name': 'Owner',
+            'compliance_status': 'Compliance Status',
+            'parameters_summary': 'Parameters'
+        },
+        fieldImages: {
+            'permit_id': 'TextEdit',
+            'outfall': 'TextEdit',
+            'owner_name': 'TextEdit',
+            'compliance_status': 'TextEdit',
+            'parameters_summary': 'TextEdit'
+        }
+    });
+    
+    // Load and process GeoJSON
+    fetch('./resources/compliance_data.geojson')
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(geojsonData) {
+            var aggregatedData = aggregateComplianceData(geojsonData.features);
+            
+            aggregatedData.forEach(function(outfallData) {
+                var compliance_status = getComplianceStatus(outfallData);
+                
+                // Create parameters summary for popup
+                var paramsSummary = '<ul>';
+                outfallData.parameters.forEach(function(param) {
+                    var complianceIcon = '';
+                    switch(param.compliance) {
+                        case 'Not in Compliance':
+                            complianceIcon = '❌';
+                            break;
+                        case 'In Compliance':
+                            complianceIcon = '✅';
+                            break;
+                        case 'Unknown':
+                            complianceIcon = '❓';
+                            break;
+                        case 'No Discharge':
+                            complianceIcon = '⚪';
+                            break;
+                    }
+                    
+                    paramsSummary += '<li>' + complianceIcon + ' <strong>' + param.parameter + '</strong>: ' + 
+                                     (param.reported_value !== null ? param.reported_value : 'N/A') + ' ' + 
+                                     (param.units !== null ? param.units : '') + 
+                                     ' (Limit: ' + (param.mo_max_limit !== null ? param.mo_max_limit : 'N/A') + ')</li>';
+                });
+                paramsSummary += '</ul>';
+                
+                // Create feature
+                var feature = new ol.Feature({
+                    geometry: new ol.geom.Point(ol.proj.fromLonLat(outfallData.coordinates)),
+                    permit_id: outfallData.permit_id,
+                    outfall: outfallData.outfall,
+                    outfall_description: outfallData.outfall_description,
+                    owner_name: outfallData.owner_name,
+                    compliance_status: compliance_status,
+                    parameters_summary: paramsSummary
+                });
+                
+                complianceSource.addFeature(feature);
+            });
+            
+            console.log('Loaded ' + aggregatedData.length + ' compliance outfalls');
+        })
+        .catch(function(error) {
+            console.error('Error loading compliance data:', error);
+        });
+    
+    // Add layer to map
+    map.addLayer(complianceLayer);
+    
+    // Add to layers list for layer switcher (add near the top of the list)
+    if (typeof layersList !== 'undefined') {
+        layersList.unshift(complianceLayer);
+    }
+})();
 
 //move controls inside containers, in order
     //zoom
@@ -1146,4 +1356,5 @@ document.addEventListener('DOMContentLoaded', function() {
     var attributionControl = document.getElementsByClassName('bottom-attribution')[0];
     if (attributionControl) {
         bottomRightContainerDiv.appendChild(attributionControl);
+
     }
