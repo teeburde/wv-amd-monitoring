@@ -1358,7 +1358,16 @@ document.addEventListener('DOMContentLoaded', function() {
         compliance_status: compliance_status,
         parameters_summary: paramsSummary
     });
-    
+	// Debug: Test the style function
+	if (outfallData.permit_id === 'WV0043613') {
+	    var testStyle = complianceStyleFunction(feature);
+	    console.log('  Style for', outfallData.outfall, ':', {
+	        color: testStyle.getImage().getFill().getColor(),
+	        radius: testStyle.getImage().getRadius(),
+	        zIndex: testStyle.getZIndex()
+	    });
+	}
+	    
     complianceSource.addFeature(feature);
     featuresAdded++;
     
@@ -1390,6 +1399,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('Compliance layer added to map');
 })();
+
+	// Final verification
+	setTimeout(function() {
+	    console.log('=== FINAL VERIFICATION ===');
+	    var allFeatures = complianceSource.getFeatures();
+	    console.log('Total features in source:', allFeatures.length);
+	    
+	    var wv0043613Features = allFeatures.filter(function(f) {
+	        return f.get('permit_id') === 'WV0043613';
+	    });
+	    console.log('WV0043613 features found:', wv0043613Features.length);
+	    
+	    wv0043613Features.forEach(function(f) {
+	        var geom = f.getGeometry();
+	        var coords = geom.getCoordinates();
+	        console.log('  Outfall', f.get('outfall'), 'at', coords, 
+	                    'status:', f.get('compliance_status'));
+	    });
+    
+    console.log('Map extent:', map.getView().calculateExtent(map.getSize()));
+    console.log('Layer extent:', complianceSource.getExtent());
+}, 3000);
 
 //move controls inside containers, in order
     //zoom
@@ -1427,6 +1458,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bottomRightContainerDiv.appendChild(attributionControl);
 
     }
+
 
 
 
