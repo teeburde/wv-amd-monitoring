@@ -43,6 +43,65 @@
             margin: 0;
         }
         </style>
+        
+        <style>
+        /* NPDES Compliance Legend */
+        .compliance-legend {
+            position: absolute;
+            bottom: 60px;
+            right: 10px;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 18px;
+            z-index: 1000;
+        }
+        
+        .compliance-legend h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .compliance-legend-item {
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .compliance-symbol {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            border: 2px solid;
+        }
+        
+        .symbol-noncompliant {
+            background-color: rgba(255, 0, 0, 0.9);
+            border-color: rgba(139, 0, 0, 1);
+        }
+        
+        .symbol-compliant {
+            background-color: rgba(0, 255, 0, 0.9);
+            border-color: rgba(0, 100, 0, 1);
+        }
+        
+        .symbol-unknown {
+            background-color: rgba(255, 165, 0, 0.9);
+            border-color: rgba(204, 85, 0, 1);
+        }
+        
+        .symbol-nodischarge {
+            background-color: rgba(169, 169, 169, 0.9);
+            border-color: rgba(105, 105, 105, 1);
+        }
+        </style>
+        
         <title></title>
     </head>
     <body>
@@ -79,6 +138,29 @@
         <script src="resources/markercluster.js"></script>
         <script src="resources/qgis2web.js"></script>
     </body>
+    <body>
+       <!-- NPDES Compliance Legend -->
+        <div class="compliance-legend">
+            <h4>NPDES Compliance Status</h4>
+            <div class="compliance-legend-item">
+                <span class="compliance-symbol symbol-noncompliant"></span>
+                <span>Not in Compliance</span>
+            </div>
+            <div class="compliance-legend-item">
+                <span class="compliance-symbol symbol-compliant"></span>
+                <span>In Compliance</span>
+            </div>
+            <div class="compliance-legend-item">
+                <span class="compliance-symbol symbol-unknown"></span>
+                <span>Unknown</span>
+            </div>
+            <div class="compliance-legend-item">
+                <span class="compliance-symbol symbol-nodischarge"></span>
+                <span>No Discharge</span>
+            </div>
+        </div> 
+    </body>
 
 </html>
+
 
