@@ -1117,6 +1117,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function aggregateComplianceData(features) {
         var outfallMap = {};
         
+        console.log('Total features in GeoJSON:', features.length);
+        
         features.forEach(function(feature) {
             var props = feature.properties;
             var key = props.permit_id + '_' + props.outfall;
@@ -1161,7 +1163,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        return Object.values(outfallMap);
+        var aggregated = Object.values(outfallMap);
+        console.log('Aggregated to unique outfalls:', aggregated.length);
+        
+        // Log compliance status breakdown
+        var statusBreakdown = {
+            'Not in Compliance': 0,
+            'In Compliance': 0,
+            'Unknown': 0,
+            'No Discharge': 0
+        };
+        aggregated.forEach(function(outfall) {
+            var status = getComplianceStatus(outfall);
+            statusBreakdown[status]++;
+        });
+        console.log('Compliance breakdown:', statusBreakdown);
+        
+        return aggregated;
     }
     
     // Function to determine overall compliance status
@@ -1185,29 +1203,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         switch(compliance) {
             case 'Not in Compliance':
-                color = 'rgba(255, 0, 0, 0.8)';  // Red
+                color = 'rgba(255, 0, 0, 0.9)';  // Red
                 strokeColor = 'rgba(139, 0, 0, 1)';  // Dark red
-                radius = 8;
+                radius = 9;
                 break;
             case 'In Compliance':
-                color = 'rgba(0, 255, 0, 0.8)';  // Green
+                color = 'rgba(0, 255, 0, 0.9)';  // Green
                 strokeColor = 'rgba(0, 100, 0, 1)';  // Dark green
-                radius = 7;
+                radius = 8;
                 break;
             case 'Unknown':
-                color = 'rgba(255, 165, 0, 0.8)';  // Orange
+                color = 'rgba(255, 165, 0, 0.9)';  // Orange
                 strokeColor = 'rgba(204, 85, 0, 1)';  // Dark orange
-                radius = 7;
+                radius = 8;
                 break;
             case 'No Discharge':
-                color = 'rgba(169, 169, 169, 0.8)';  // Gray
+                color = 'rgba(169, 169, 169, 0.9)';  // Gray
                 strokeColor = 'rgba(105, 105, 105, 1)';  // Dark gray
-                radius = 6;
+                radius = 7;
                 break;
             default:
-                color = 'rgba(128, 128, 128, 0.8)';
+                color = 'rgba(128, 128, 128, 0.9)';
                 strokeColor = 'rgba(64, 64, 64, 1)';
-                radius = 6;
+                radius = 7;
         }
         
         return new ol.style.Style({
@@ -1221,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     width: 2
                 })
             }),
-            zIndex: compliance === 'Not in Compliance' ? 1000 : 100
+            zIndex: compliance === 'Not in Compliance' ? 10000 : 5000
         });
     }
     
@@ -1231,8 +1249,10 @@ document.addEventListener('DOMContentLoaded', function() {
         source: complianceSource,
         style: complianceStyleFunction,
         title: 'NPDES Compliance Status',
+        visible: true,  // Ensure it's visible by default
         interactive: true,
         popuplayertitle: 'NPDES Compliance Status',
+        zIndex: 1000,  // High z-index to ensure it's on top
         fieldLabels: {
             'permit_id': 'inline label - always visible',
             'outfall': 'inline label - always visible',
@@ -1259,11 +1279,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load and process GeoJSON
     fetch('./resources/compliance_data.geojson')
         .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Failed to load GeoJSON: ' + response.statusText);
+            }
             return response.json();
         })
         .then(function(geojsonData) {
+            console.log('GeoJSON loaded successfully');
             var aggregatedData = aggregateComplianceData(geojsonData.features);
             
+            var featuresAdded = 0;
             aggregatedData.forEach(function(outfallData) {
                 var compliance_status = getComplianceStatus(outfallData);
                 
@@ -1285,26 +1310,25 @@ document.addEventListener('DOMContentLoaded', function() {
                             complianceIcon = '⚪';
                             break;
                     }
-
-					// Format limit display - show range for pH, single value for others
-				    var limitDisplay = '';
-				    if (param.parameter.toLowerCase().includes('ph')) {
-				        // For pH, show as range if both min and max exist
-				        if (param.mo_min_limit !== null && param.mo_max_limit !== null) {
-				            limitDisplay = param.mo_min_limit + '-' + param.mo_max_limit;
-				        } else {
-				            limitDisplay = 'N/A';
-				        }
-				    } else {
-				        // For other parameters, show only max limit
-				        limitDisplay = param.mo_max_limit !== null ? param.mo_max_limit : 'N/A';
-				    }
-    
+                    
+                    // Format limit display - show range for pH, single value for others
+                    var limitDisplay = '';
+                    if (param.parameter.toLowerCase().includes('ph')) {
+                        // For pH, show as range if both min and max exist
+                        if (param.mo_min_limit !== null && param.mo_max_limit !== null) {
+                            limitDisplay = param.mo_min_limit + '-' + param.mo_max_limit;
+                        } else {
+                            limitDisplay = 'N/A';
+                        }
+                    } else {
+                        // For other parameters, show only max limit
+                        limitDisplay = param.mo_max_limit !== null ? param.mo_max_limit : 'N/A';
+                    }
                     
                     paramsSummary += '<li>' + complianceIcon + ' <strong>' + param.parameter + '</strong>: ' + 
                                      (param.reported_value !== null ? param.reported_value : 'N/A') + ' ' + 
                                      (param.units !== null ? param.units : '') + 
-                                     ' (Limit: ' + (param.mo_max_limit !== null ? param.mo_max_limit : 'N/A') + ')</li>';
+                                     ' (Limit: ' + limitDisplay + ')</li>';
                 });
                 paramsSummary += '</ul>';
                 
@@ -1320,21 +1344,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 complianceSource.addFeature(feature);
+                featuresAdded++;
             });
             
-            console.log('Loaded ' + aggregatedData.length + ' compliance outfalls');
+            console.log('Added ' + featuresAdded + ' features to compliance layer');
+            console.log('Layer extent:', complianceSource.getExtent());
+            
+            // Force layer refresh
+            complianceLayer.changed();
+            
         })
         .catch(function(error) {
             console.error('Error loading compliance data:', error);
         });
     
-    // Add layer to map
+    // Add layer to map with high z-index
+    complianceLayer.setZIndex(1000);
     map.addLayer(complianceLayer);
     
-    // Add to layers list for layer switcher (add near the top of the list)
+    // Add to layers list for layer switcher (add at the beginning)
     if (typeof layersList !== 'undefined') {
         layersList.unshift(complianceLayer);
     }
+    
+    console.log('Compliance layer added to map');
 })();
 
 //move controls inside containers, in order
@@ -1373,4 +1406,5 @@ document.addEventListener('DOMContentLoaded', function() {
         bottomRightContainerDiv.appendChild(attributionControl);
 
     }
+
 
