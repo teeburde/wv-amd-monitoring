@@ -1195,54 +1195,69 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return 'Unknown';
     }
+
+	// Compliance Style
+  function complianceStyleFunction(feature) {
+    var compliance = feature.get('compliance_status');
+    var description = feature.get('outfall_description') || '';
     
-    // Style function for compliance features
-    function complianceStyleFunction(feature) {
-        var compliance = feature.get('compliance_status');
-        var color, strokeColor, radius;
-        
-        switch(compliance) {
-            case 'Not in Compliance':
-                color = 'rgba(255, 0, 0, 0.9)';  // Red
-                strokeColor = 'rgba(139, 0, 0, 1)';  // Dark red
-                radius = 9;
-                break;
-            case 'In Compliance':
-                color = 'rgba(0, 255, 0, 0.9)';  // Green
-                strokeColor = 'rgba(0, 100, 0, 1)';  // Dark green
-                radius = 8;
-                break;
-            case 'Unknown':
-                color = 'rgba(255, 165, 0, 0.9)';  // Orange
-                strokeColor = 'rgba(204, 85, 0, 1)';  // Dark orange
-                radius = 8;
-                break;
-            case 'No Discharge':
-                color = 'rgba(169, 169, 169, 0.9)';  // Gray
-                strokeColor = 'rgba(105, 105, 105, 1)';  // Dark gray
-                radius = 7;
-                break;
-            default:
-                color = 'rgba(128, 128, 128, 0.9)';
-                strokeColor = 'rgba(64, 64, 64, 1)';
-                radius = 7;
-        }
-        
+    // Check if this is a receiving water/ambient monitoring point
+    var isAmbient = description.toLowerCase().includes('receiving water') || 
+                    description.toLowerCase().includes('ambient');
+    
+    if (isAmbient) {
+        // Blue triangle for ambient/receiving water monitoring
         return new ol.style.Style({
-            image: new ol.style.Circle({
-                radius: radius,
-                fill: new ol.style.Fill({
-                    color: color
-                }),
-                stroke: new ol.style.Stroke({
-                    color: strokeColor,
-                    width: 2
-                })
+            image: new ol.style.RegularShape({
+                fill: new ol.style.Fill({color: 'rgba(0, 150, 255, 0.9)'}),
+                stroke: new ol.style.Stroke({color: 'rgba(0, 100, 200, 1)', width: 2}),
+                points: 3,  // Triangle
+                radius: 10,
+                angle: 0
             }),
-            zIndex: compliance === 'Not in Compliance' ? 10000 : 5000
+            zIndex: 5000
         });
     }
     
+    // Original compliance-based styling for discharge outfalls
+    var fillColor, strokeColor, radius;
+    
+    switch(compliance) {
+        case 'Not in Compliance':
+            fillColor = 'rgba(255, 0, 0, 0.9)';
+            strokeColor = 'rgba(139, 0, 0, 1)';
+            radius = 8;
+            break;
+        case 'In Compliance':
+            fillColor = 'rgba(0, 255, 0, 0.9)';
+            strokeColor = 'rgba(0, 100, 0, 1)';
+            radius = 8;
+            break;
+        case 'Unknown':
+            fillColor = 'rgba(255, 165, 0, 0.9)';
+            strokeColor = 'rgba(204, 85, 0, 1)';
+            radius = 8;
+            break;
+        case 'No Discharge':
+            fillColor = 'rgba(169, 169, 169, 0.9)';
+            strokeColor = 'rgba(105, 105, 105, 1)';
+            radius = 7;
+            break;
+        default:
+            fillColor = 'rgba(128, 128, 128, 0.7)';
+            strokeColor = 'rgba(64, 64, 64, 1)';
+            radius = 7;
+    }
+    
+    return new ol.style.Style({
+        image: new ol.style.Circle({
+            radius: radius,
+            fill: new ol.style.Fill({color: fillColor}),
+            stroke: new ol.style.Stroke({color: strokeColor, width: 2})
+        }),
+        zIndex: 5000
+    });
+}
     // Create compliance layer
     var complianceSource = new ol.source.Vector();
     var complianceLayer = new ol.layer.Vector({
@@ -1458,6 +1473,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bottomRightContainerDiv.appendChild(attributionControl);
 
     }
+
 
 
 
