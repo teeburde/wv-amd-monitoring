@@ -1,6 +1,6 @@
 # West Virginia AMD Monitoring Web Map
 
-An interactive web mapping application for monitoring Acid Mine Drainage (AMD) and NPDES (National Pollutant Discharge Elimination System) compliance in West Virginia's Cheat Watershed.
+An interactive web mapping application for monitoring Acid Mine Drainage (AMD) and NPDES (National Pollutant Discharge Elimination System) compliance in West Virginia's Cheat Watershed (v2 will update for compliance within the whole state).
 
 ## 🌊 Overview
 
