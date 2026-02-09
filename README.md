@@ -1,1 +1,0 @@
-# cheat-amd-monitoring
